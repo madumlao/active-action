@@ -1,0 +1,108 @@
+#!/bin/bash
+# given a command, repeatedly runs it at an interval so long as the screen is active
+
+set -e # exit on error
+set -u # exit on undeclared
+
+NAME="$(basename $0)"
+OPTS=`getopt -n $NAME -o xhveru:k:i:o: --long errorexit,help,verbose,explain,reverse,checkuser:,interval:,check:,output: -- "$@"`
+if [ "$?" != 0 ]; then echo "Failed to parse options"; exit 1; fi
+eval set -- "$OPTS"
+
+VERBOSE=
+REVERSE=
+ERROREXIT=
+ACTION=run
+INTERVAL=5m
+CHECKPROG=xscreensaver
+CHECKUSER=`whoami`
+OUTPUT=
+while true; do
+	case "$1" in
+		-h| --help) ACTION=help; shift;;
+		-v| --verbose) VERBOSE=true; shift;;
+		-r| --reverse) REVERSE=true; shift;;
+		-x| --errorexit) ERROREXIT=true; shift;;
+		-e| --explain) ACTION=explain; shift;;
+
+		-i| --interval) INTERVAL=$2; shift 2;;
+		-u| --user) CHECKUSER=$2; shift 2;;
+		-k| --check) CHECKPROG=$2; shift 2;;
+		-o| --output) OUTPUT=$2; shift 2;;
+		-- ) shift; break ;;
+	esac
+done
+COMMAND="$@"
+
+aa_help() {
+	cat <<-END
+	$NAME: run a command repeatedly so long as the screen is active
+	  $NAME -- curl www.mysite.com/active
+	    retrieve the specified url every 5 minutes the screen is active
+	  $NAME -r -- curl www.mysite.com/active
+	    retrieve the specified url every 5 minutes the screen is inactive
+	  $NAME -i 15m -k gnome-screensaver -u trixie -- curl -X POST www.creepysite.com/creepy
+	    retrieve the specified url every 15 minutes that gnome-screensaver isnt running as trixie
+	
+	  -h|--help           : this help
+	  -k|--check command  : command that isnt running when active \(default to xscreensaver \)
+	  -u|--user checkuser : user the command is running as \(default to \$USER \)
+	  -r|--reverse        : opposte: run when inactive instead
+	  -e|--explain        : dry-run / explain what it will do
+	  -v|--verbose        : explain what is being done
+	  -x|--errorexit      : exit on first error
+	  -o|--output file    : append command output to file
+	END
+}
+
+aa_explain() {
+	if [ "$REVERSE" ]; then IS=isnt; else IS=is; fi
+	if ! [ "$OUTPUT" ]; then OUTPUT=STDOUT; fi
+	echo "Going to run $COMMAND every $INTERVAL so long as $CHECKPROG $IS running as $CHECKUSER and sending output to $OUTPUT"
+}
+
+aa_run() {
+	if [ "$VERBOSE" ]; then
+		echo "$(date --rfc-3339=seconds): Running command $COMMAND"
+	fi
+	if [ "$ERROREXIT" ]; then
+		if [ "$OUTPUT" ]; then
+			$COMMAND >> "$OUTPUT"
+		else
+			$COMMAND
+		fi
+	else
+		if [ "$OUTPUT" ]; then
+			$COMMAND >> "$OUTPUT" || true
+		else
+			$COMMAND || true
+		fi
+	fi
+}
+
+if [ "$ACTION" = "help" ]; then
+	aa_help
+	exit
+fi
+
+if [ "$ACTION" = "explain" ]; then
+	aa_explain
+	exit
+fi
+
+####
+# command proper
+####
+
+while true; do
+	RUNPID="$(pgrep -u $CHECKUSER -x $CHECKPROG || true)"
+	if [ "$REVERSE" ] && [ "$RUNPID" ]; then
+		aa_run
+	elif [ -z "$REVERSE" ] && [ -z "$RUNPID" ]; then
+		aa_run
+	elif [ "$VERBOSE" ]; then
+		echo "$(date --rfc-3339=seconds): no action"
+	fi
+
+	sleep $INTERVAL
+done
