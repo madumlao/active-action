@@ -95,10 +95,37 @@ fi
 ####
 
 while true; do
-	RUNPID="$(pgrep -u $CHECKUSER -x $CHECKPROG || true)"
-	if [ "$REVERSE" ] && [ "$RUNPID" ]; then
-		aa_run
-	elif [ -z "$REVERSE" ] && [ -z "$RUNPID" ]; then
+	# determine whether to run or not
+	RUN=
+	if [ "$CHECKPROG" = "xscreensaver" ]; then
+		# xscreensaver-specific logic
+		XSTATUS="$(xscreensaver-command -time 2>/dev/null || true)"
+		STATUS=
+		case "$XSTATUS" in
+			*" blanked"*) STATUS=; ;;
+			*"non-blanked"*) STATUS=active; ;;
+			*"locked"*) STATUS=; ;;
+			*) STATUS=active; ;; # no saver status = active
+		esac
+
+		if [ -z "$REVERSE" ] && [ "$STATUS" = "active" ]; then
+			RUN=y
+		elif [ "$REVERSE" ] && [ -z "$STATUS" ]; then
+			RUN=y
+		fi
+	else
+		# check if given program is running
+		RUNPID="$(pgrep -u $CHECKUSER -x $CHECKPROG || true)"
+		if [ "$REVERSE" ] && [ "$RUNPID" ]; then
+			RUN=y
+		elif [ -z "$REVERSE" ] && [ -z "$RUNPID" ]; then
+			RUN=y
+		fi
+	fi
+
+
+	# actually run or no-op
+	if [ "$RUN" ]; then
 		aa_run
 	elif [ "$VERBOSE" ]; then
 		echo "$(date --rfc-3339=seconds): no action"
