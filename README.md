@@ -37,3 +37,9 @@ active-action -k bash -u foo -- my-custom-script
  -x|--errorexit      : exit on first error
  -o|--output file    : append command output to file
 ~~~
+
+## Checks
+active action can perform the following checks:
+
+1. if `--check xscreensaver` (default) then it uses `xscreensaver-command` to determine whether the screensaver is active or not.
+2. else, it will check if the program is running as the checkuser (default current user) via pgrep
