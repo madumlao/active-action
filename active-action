@@ -113,6 +113,20 @@ while true; do
 		elif [ "$REVERSE" ] && [ -z "$STATUS" ]; then
 			RUN=y
 		fi
+	elif [ "$CHECKPROG" = "gnome-screensaver" ]; then
+		# gnome-screensaver-specific logic
+		XSTATUS="$(gnome-screensaver-command --query || true)"
+		STATUS=
+		case "$XSTATUS" in
+			*"inactive"*) STATUS=; ;;
+			*) STATUS=active; ;; # anything other status = active
+		esac
+
+		if [ -z "$REVERSE" ] && [ "$STATUS" = "active" ]; then
+			RUN=y
+		elif [ "$REVERSE" ] && [ -z "$STATUS" ]; then
+			RUN=y
+		fi
 	else
 		# check if given program is running
 		RUNPID="$(pgrep -u $CHECKUSER -x $CHECKPROG || true)"
