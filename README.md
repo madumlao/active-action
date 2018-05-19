@@ -42,4 +42,5 @@ active-action -k bash -u foo -- my-custom-script
 active action can perform the following checks:
 
 1. if `--check xscreensaver` (default) then it uses `xscreensaver-command` to determine whether the screensaver is active or not.
-2. else, it will check if the program is running as the checkuser (default current user) via pgrep
+2. if `--check gnome-screensaver` then it uses `gnome-screensaver-command` to determine whether the screensaver is active or not.
+3. else, it will check if the program is running as the checkuser (default current user) via pgrep
