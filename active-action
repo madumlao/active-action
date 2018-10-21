@@ -45,8 +45,8 @@ aa_help() {
 	    retrieve the specified url every 15 minutes that gnome-screensaver isnt running as trixie
 	
 	  -h|--help           : this help
-	  -k|--check command  : command that isnt running when active \(default to xscreensaver \)
-	  -u|--user checkuser : user the command is running as \(default to \$USER \)
+	  -k|--check command  : command that isnt running when active (default to xscreensaver)
+	  -u|--user checkuser : user the command is running as (default to \$USER)
 	  -r|--reverse        : opposte: run when inactive instead
 	  -e|--explain        : dry-run / explain what it will do
 	  -v|--verbose        : explain what is being done
